@@ -6,6 +6,7 @@ import { useTodos } from "@/hooks/useTodos";
 import { TodoSearch } from "@/components/todo/TodoSearch";
 import { TodoTabs } from "@/components/todo/TodoTabs";
 import { TodoList } from "@/components/todo/TodoList";
+import { TodoPagination } from "@/components/todo/TodoPagination";
 import { CreateTodoDialog } from "@/components/todo/CreateTodoDialog";
 import { EditTodoDialog } from "@/components/todo/EditTodoDialog";
 import { DeleteTodoDialog } from "@/components/todo/DeleteTodoDialog";
@@ -28,7 +29,7 @@ import { DUMMY_MEMBERS } from "@/constants/members";
 export default function Home() {
   // Business logic and state from custom hook
   const {
-    filteredTodos,
+    paginatedTodos,
     counts,
     searchQuery,
     setSearchQuery,
@@ -36,6 +37,9 @@ export default function Home() {
     setActiveTab,
     selectedAssignee,
     setSelectedAssignee,
+    currentPage,
+    totalPages,
+    setCurrentPage,
     addTodo,
     updateTodo,
     deleteTodo,
@@ -47,7 +51,7 @@ export default function Home() {
   const [deletingTodoId, setDeletingTodoId] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       {/* App Header: brand, back to home, theme toggle */}
       <header className="sticky top-0 z-50 border-b border-border backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 md:px-8 py-4">
@@ -61,7 +65,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto space-y-8 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8 p-4 md:p-8 h-full">
 
         {/* Header: Search and Create Action */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -103,13 +107,24 @@ export default function Home() {
         {/* Main Content: Filtered Todo List */}
         <div className="mt-6">
           <TodoList
-            todos={filteredTodos}
+            todos={paginatedTodos}
             onToggle={toggleTodo}
             onEdit={setEditingTodo}
             onDelete={setDeletingTodoId}
           />
         </div>
       </div>
+
+      {/* Pagination: fixed to the bottom of the viewport, like the header is fixed to the top */}
+      <footer className="fixed inset-x-0 bottom-0 z-50 border-t border-border backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 pb-9">
+          <TodoPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setCurrentPage={setCurrentPage}
+          />
+        </div>
+      </footer>
 
       {/* Overlays: Edit and Delete Dialogs */}
       <EditTodoDialog
