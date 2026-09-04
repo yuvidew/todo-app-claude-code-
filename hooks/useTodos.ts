@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 import { Todo } from "@/types/todo";
 
+/** Number of tasks shown per page in the paginated task list. */
+export const TODOS_PAGE_SIZE = 6;
+
 /**
  * Return type for the useTodos hook, providing state and actions
  * for managing a list of todo tasks.
@@ -9,15 +12,19 @@ export interface UseTodosReturn {
   // State
   todos: Todo[];
   filteredTodos: Todo[];
+  paginatedTodos: Todo[];
   counts: { total: number; completed: number; pending: number };
   searchQuery: string;
   activeTab: string;
   selectedAssignee: string;
+  currentPage: number;
+  totalPages: number;
 
   // State Setters
   setSearchQuery: (query: string) => void;
   setActiveTab: (tab: string) => void;
   setSelectedAssignee: (assignee: string) => void;
+  setCurrentPage: (page: number) => void;
 
   // Actions
   addTodo: (title: string, description: string, assignee?: string) => void;
@@ -37,6 +44,7 @@ export function useTodos(): UseTodosReturn {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedAssignee, setSelectedAssignee] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   /**
    * Computes counts for the different task statuses.
@@ -77,6 +85,41 @@ export function useTodos(): UseTodosReturn {
       return true;
     });
   }, [todos, activeTab, searchQuery, selectedAssignee]);
+
+  /**
+   * Total number of pages available for the current filtered list.
+   */
+  const totalPages = Math.max(1, Math.ceil(filteredTodos.length / TODOS_PAGE_SIZE));
+
+  /**
+   * Resets to the first page whenever the active filters change, so the
+   * user isn't left stranded on a now out-of-range page. This adjusts state
+   * during rendering (React's recommended pattern, using state rather than a
+   * ref so it stays compatible with the React Compiler) instead of an effect,
+   * so it takes effect before the browser paints rather than after.
+   */
+  const filterKey = `${activeTab}|${searchQuery}|${selectedAssignee}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  let page = currentPage;
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
+    page = 1;
+    setCurrentPage(1);
+  }
+
+  /**
+   * Clamps the current page back into range if it becomes invalid,
+   * e.g. after deleting the last task on the final page.
+   */
+  page = Math.min(page, totalPages);
+
+  /**
+   * Computes the slice of filtered todos to display on the current page.
+   */
+  const paginatedTodos = useMemo(() => {
+    const start = (page - 1) * TODOS_PAGE_SIZE;
+    return filteredTodos.slice(start, start + TODOS_PAGE_SIZE);
+  }, [filteredTodos, page]);
 
   /**
    * Adds a new todo to the list.
@@ -134,13 +177,17 @@ export function useTodos(): UseTodosReturn {
   return {
     todos,
     filteredTodos,
+    paginatedTodos,
     counts,
     searchQuery,
     activeTab,
     selectedAssignee,
+    currentPage: page,
+    totalPages,
     setSearchQuery,
     setActiveTab,
     setSelectedAssignee,
+    setCurrentPage,
     addTodo,
     updateTodo,
     deleteTodo,
