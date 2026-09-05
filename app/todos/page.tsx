@@ -7,10 +7,10 @@ import { TodoSearch } from "@/components/todo/TodoSearch";
 import { TodoTabs } from "@/components/todo/TodoTabs";
 import { TodoList } from "@/components/todo/TodoList";
 import { TodoPagination } from "@/components/todo/TodoPagination";
-import { CreateTodoDialog } from "@/components/todo/CreateTodoDialog";
-import { EditTodoDialog } from "@/components/todo/EditTodoDialog";
+import { TaskSheet, TaskSheetMode } from "@/components/todo/TaskSheet";
 import { DeleteTodoDialog } from "@/components/todo/DeleteTodoDialog";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { Todo } from "@/types/todo";
 import {
   Select,
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DUMMY_MEMBERS } from "@/constants/members";
+import { Plus } from "lucide-react";
 
 /**
  * Home component serves as the main entry point for the Todo application.
@@ -47,7 +48,9 @@ export default function Home() {
   } = useTodos();
 
   // UI state for managing modal visibility
-  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
+  const [sheetMode, setSheetMode] = useState<TaskSheetMode>("create");
   const [deletingTodoId, setDeletingTodoId] = useState<string | null>(null);
 
   return (
@@ -73,7 +76,16 @@ export default function Home() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
           />
-          <CreateTodoDialog onCreate={addTodo} />
+          <Button
+            className="w-full md:w-auto gap-2"
+            onClick={() => {
+              setSelectedTask(null);
+              setSheetMode("create");
+              setSheetOpen(true);
+            }}
+          >
+            <Plus className="size-4" /> Add Task
+          </Button>
         </div>
 
         {/* Filter Section */}
@@ -109,7 +121,16 @@ export default function Home() {
           <TodoList
             todos={paginatedTodos}
             onToggle={toggleTodo}
-            onEdit={setEditingTodo}
+            onOpen={(todo) => {
+              setSelectedTask(todo);
+              setSheetMode("view");
+              setSheetOpen(true);
+            }}
+            onEdit={(todo) => {
+              setSelectedTask(todo);
+              setSheetMode("edit");
+              setSheetOpen(true);
+            }}
             onDelete={setDeletingTodoId}
           />
         </div>
@@ -126,14 +147,25 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Overlays: Edit and Delete Dialogs */}
-      <EditTodoDialog
-        key={editingTodo?.id}
-        todo={editingTodo}
-        onCancel={() => setEditingTodo(null)}
+      {/* Overlays: Task Sheet (create/view/edit) and Delete Dialog */}
+      <TaskSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        mode={sheetMode}
+        onModeChange={setSheetMode}
+        task={selectedTask}
+        onCreate={addTodo}
         onUpdate={(id, title, description, assignee) => {
           updateTodo(id, title, description, assignee);
-          setEditingTodo(null);
+          // updateTodo rebuilds the todos array immutably and returns void, so
+          // selectedTask (held here) must be re-synced by hand or the Sheet's
+          // "view" mode (which reads straight from the `task` prop) would show
+          // stale content after switching back from "edit".
+          setSelectedTask((prev) =>
+            prev && prev.id === id
+              ? { ...prev, title: title.trim(), description, assignee: assignee?.trim() }
+              : prev
+          );
         }}
       />
 

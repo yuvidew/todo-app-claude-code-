@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Todo } from "@/types/todo";
+import { Todo, TodoDescription } from "@/types/todo";
+import { blocksToPlainText } from "@/lib/blocknote";
 
 /** Number of tasks shown per page in the paginated task list. */
 export const TODOS_PAGE_SIZE = 6;
@@ -27,8 +28,8 @@ export interface UseTodosReturn {
   setCurrentPage: (page: number) => void;
 
   // Actions
-  addTodo: (title: string, description: string, assignee?: string) => void;
-  updateTodo: (id: string, title: string, description: string, assignee?: string) => void;
+  addTodo: (title: string, description: TodoDescription, assignee?: string) => void;
+  updateTodo: (id: string, title: string, description: TodoDescription, assignee?: string) => void;
   deleteTodo: (id: string) => void;
   toggleTodo: (id: string) => void;
 }
@@ -72,7 +73,7 @@ export function useTodos(): UseTodosReturn {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesTitle = todo.title.toLowerCase().includes(query);
-        const matchesDesc = todo.description.toLowerCase().includes(query);
+        const matchesDesc = blocksToPlainText(todo.description).toLowerCase().includes(query);
         const matchesAssignee = todo.assignee?.toLowerCase().includes(query);
         const matchesStatus = (todo.completed ? "completed" : "pending").toLowerCase().includes(query);
         const matchesDate = todo.createdAt.toLocaleDateString().includes(query);
@@ -127,11 +128,11 @@ export function useTodos(): UseTodosReturn {
    * @param description - The description of the task.
    * @param assignee - The person assigned to the task.
    */
-  const addTodo = (title: string, description: string, assignee?: string) => {
+  const addTodo = (title: string, description: TodoDescription, assignee?: string) => {
     const newTodo: Todo = {
       id: crypto.randomUUID(),
       title: title.trim(),
-      description: description.trim(),
+      description,
       completed: false,
       createdAt: new Date(),
       assignee: assignee?.trim(),
@@ -146,11 +147,11 @@ export function useTodos(): UseTodosReturn {
    * @param description - The new description.
    * @param assignee - The new assignee.
    */
-  const updateTodo = (id: string, title: string, description: string, assignee?: string) => {
+  const updateTodo = (id: string, title: string, description: TodoDescription, assignee?: string) => {
     setTodos((prev) =>
       prev.map((t) =>
         t.id === id
-          ? { ...t, title: title.trim(), description: description.trim(), assignee: assignee?.trim() }
+          ? { ...t, title: title.trim(), description, assignee: assignee?.trim() }
           : t
       )
     );

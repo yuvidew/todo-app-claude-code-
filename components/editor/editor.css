@@ -1,0 +1,21 @@
+/*
+ * BlockNote renders these as global class names (not CSS-module-scoped), so
+ * this file must stay a plain stylesheet imported for its side effects, same
+ * as the `@blocknote/mantine/style.css` import beside it.
+ *
+ * Without this, a long unbroken string (no spaces) typed into the editor
+ * overflows its container horizontally instead of wrapping.
+ */
+.bn-editor {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.bn-block-content,
+.bn-inline-content {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

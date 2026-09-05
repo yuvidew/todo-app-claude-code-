@@ -6,6 +6,8 @@ interface TodoListProps {
   todos: Todo[];
   /** Callback triggered when a task's completion status is toggled */
   onToggle: (id: string) => void;
+  /** Callback triggered when a task card is clicked, to view the full task */
+  onOpen: (todo: Todo) => void;
   /** Callback triggered when a task is selected for editing */
   onEdit: (todo: Todo) => void;
   /** Callback triggered when a task is selected for deletion */
@@ -16,7 +18,7 @@ interface TodoListProps {
  * TodoList component renders a grid of TaskCard components.
  * It handles the empty state when no tasks match the current filters.
  */
-export function TodoList({ todos, onToggle, onEdit, onDelete }: TodoListProps) {
+export function TodoList({ todos, onToggle, onOpen, onEdit, onDelete }: TodoListProps) {
   if (todos.length === 0) {
     return (
       <div className="col-span-full text-center py-12 text-muted-foreground">
@@ -32,6 +34,7 @@ export function TodoList({ todos, onToggle, onEdit, onDelete }: TodoListProps) {
           key={todo.id}
           todo={todo}
           onToggle={onToggle}
+          onOpen={onOpen}
           onEdit={onEdit}
           onDelete={() => onDelete(todo.id)}
         />
