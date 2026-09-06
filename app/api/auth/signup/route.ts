@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 
 import { apiSuccess, apiError } from "@/lib/api-response"
 import { validateSignupInput } from "@/lib/auth/validators"
+import { createSession } from "@/lib/auth/session"
 import { signup, DuplicateEmailError } from "@/services/auth-service"
 
 /**
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const user = await signup(email, password)
+    await createSession(user.id)
     return apiSuccess("Account created successfully.", { user }, 201)
   } catch (err) {
     if (err instanceof DuplicateEmailError) {

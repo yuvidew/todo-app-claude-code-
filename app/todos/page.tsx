@@ -10,6 +10,7 @@ import { TodoPagination } from "@/components/todo/TodoPagination";
 import { TaskSheet, TaskSheetMode } from "@/components/todo/TaskSheet";
 import { DeleteTodoDialog } from "@/components/todo/DeleteTodoDialog";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Todo } from "@/types/todo";
 import {
@@ -64,7 +65,10 @@ export default function Home() {
             </div>
             <span className="text-lg font-bold tracking-tight text-foreground">NexusCore</span>
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LogoutButton />
+          </div>
         </div>
       </header>
 

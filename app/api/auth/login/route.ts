@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 
 import { apiSuccess, apiError } from "@/lib/api-response"
 import { validateLoginInput } from "@/lib/auth/validators"
+import { createSession } from "@/lib/auth/session"
 import { login, InvalidCredentialsError } from "@/services/auth-service"
 
 /**
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const user = await login(email, password)
+    await createSession(user.id)
     return apiSuccess("Login successful.", { user }, 200)
   } catch (err) {
     if (err instanceof InvalidCredentialsError) {
