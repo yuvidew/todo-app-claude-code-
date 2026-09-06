@@ -2,12 +2,14 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/auth/PasswordInput"
 import { AuthLegal } from "@/components/auth/AuthLegal"
+import { toast } from "@/components/ui/toast"
 import { type FieldErrors, validateEmail, validateLoginForm } from "@/components/auth/validation"
 
 export interface LoginValues {
@@ -16,20 +18,30 @@ export interface LoginValues {
 }
 
 interface LoginFormProps {
-  /** Isolated integration point for a real sign-in API. Defaults to a no-op
-   *  stub — swapping this prop is the only change needed once a backend exists. */
+  /** Isolated integration point for a real sign-in API. Defaults to a
+   *  fetch-based implementation that calls POST /api/auth/login — swapping
+   *  this prop is the only change needed for tests or a future session change. */
   onSignIn?: (values: LoginValues) => Promise<void>
 }
 
 async function defaultOnSignIn(values: LoginValues) {
-  // TODO(auth): wire up the real sign-in API/session once one exists.
-  console.info("Sign-in submitted (not yet wired to a backend).", { email: values.email })
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(values),
+  })
+  const body = await res.json()
+  if (!res.ok || !body.success) {
+    throw new Error(body.message ?? "Invalid email or password.")
+  }
 }
 
 export function LoginForm({ onSignIn = defaultOnSignIn }: LoginFormProps) {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [errors, setErrors] = useState<FieldErrors>({})
+  const [formError, setFormError] = useState<string | undefined>()
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -42,6 +54,7 @@ export function LoginForm({ onSignIn = defaultOnSignIn }: LoginFormProps) {
     e.preventDefault()
     if (isSubmitting) return
 
+    setFormError(undefined)
     setHasSubmitted(true)
     const nextErrors = validateLoginForm({ email, password })
     setErrors(nextErrors)
@@ -50,6 +63,14 @@ export function LoginForm({ onSignIn = defaultOnSignIn }: LoginFormProps) {
     setIsSubmitting(true)
     try {
       await onSignIn({ email, password })
+      toast.add({
+        title: "Welcome back!",
+        description: "You've signed in successfully.",
+        type: "success",
+      })
+      router.push("/todos")
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -102,6 +123,8 @@ export function LoginForm({ onSignIn = defaultOnSignIn }: LoginFormProps) {
           </FieldContent>
         </Field>
       </div>
+
+      {formError && <FieldError>{formError}</FieldError>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Signing in..." : "Sign in"}
