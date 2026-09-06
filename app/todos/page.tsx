@@ -141,6 +141,7 @@ export default function Home() {
       </div>
 
       {/* Pagination: fixed to the bottom of the viewport, like the header is fixed to the top */}
+      {totalPages > 1 && (
       <footer className="fixed inset-x-0 bottom-0 z-50 border-t border-border backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 pb-9">
           <TodoPagination
@@ -150,6 +151,7 @@ export default function Home() {
           />
         </div>
       </footer>
+      )}
 
       {/* Overlays: Task Sheet (create/view/edit) and Delete Dialog */}
       <TaskSheet

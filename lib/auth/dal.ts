@@ -24,3 +24,15 @@ export const verifySession = cache(async () => {
 
   return { isAuth: true, userId: session.userId }
 })
+
+/**
+ * Reads the caller's session for use inside an API route handler. Unlike
+ * verifySession(), this never redirects — route handlers need to return a
+ * JSON 401 instead, so it just hands back the userId or null and lets the
+ * caller decide the response.
+ */
+export async function getApiUserId(): Promise<number | null> {
+  const cookie = await getSessionCookieValue()
+  const session = await decrypt(cookie)
+  return session?.userId ?? null
+}

@@ -1,9 +1,28 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Todo, TodoDescription } from "@/types/todo";
 import { blocksToPlainText } from "@/lib/blocknote";
+import type { ApiErrorBody, ApiSuccessBody } from "@/lib/api-response";
 
 /** Number of tasks shown per page in the paginated task list. */
 export const TODOS_PAGE_SIZE = 6;
+
+/** Shape a todo takes over the wire — `createdAt` is a JSON string, not a Date. */
+type TodoDTO = Omit<Todo, "createdAt"> & { createdAt: string };
+
+function fromDTO(dto: TodoDTO): Todo {
+  return { ...dto, createdAt: new Date(dto.createdAt) };
+}
+
+/**
+ * Parses the shared `{ success, message, data }` API envelope (see
+ * lib/api-response.ts) and throws with the server's message on failure, so
+ * every call site can just try/catch instead of re-checking `success`.
+ */
+async function parseApiResponse<T>(response: Response): Promise<T> {
+  const body = (await response.json()) as ApiSuccessBody<T> | ApiErrorBody;
+  if (!body.success) throw new Error(body.message);
+  return body.data as T;
+}
 
 /**
  * Return type for the useTodos hook, providing state and actions
@@ -20,6 +39,8 @@ export interface UseTodosReturn {
   selectedAssignee: string;
   currentPage: number;
   totalPages: number;
+  isLoading: boolean;
+  error: string | null;
 
   // State Setters
   setSearchQuery: (query: string) => void;
@@ -28,24 +49,52 @@ export interface UseTodosReturn {
   setCurrentPage: (page: number) => void;
 
   // Actions
-  addTodo: (title: string, description: TodoDescription, assignee?: string) => void;
-  updateTodo: (id: string, title: string, description: TodoDescription, assignee?: string) => void;
-  deleteTodo: (id: string) => void;
-  toggleTodo: (id: string) => void;
+  addTodo: (title: string, description: TodoDescription, assignee?: string) => Promise<void>;
+  updateTodo: (id: string, title: string, description: TodoDescription, assignee?: string) => Promise<void>;
+  deleteTodo: (id: string) => Promise<void>;
+  toggleTodo: (id: string) => Promise<void>;
 }
 
 /**
- * A custom hook that encapsulates all the business logic for the Todo application,
- * including state management, CRUD operations, and filtering/search.
+ * A custom hook that encapsulates all the business logic for the Todo application:
+ * fetching/persisting todos through the `/api/todos` REST API, plus
+ * client-side filtering, search, and pagination over the fetched set.
  *
  * @returns An object containing todo state and management functions.
  */
 export function useTodos(): UseTodosReturn {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedAssignee, setSelectedAssignee] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  /**
+   * Loads every todo owned by the signed-in user. Runs once on mount —
+   * every mutation below updates local state directly from its response
+   * rather than re-fetching the whole list.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/todos");
+        const data = await parseApiResponse<TodoDTO[]>(response);
+        if (!cancelled) setTodos(data.map(fromDTO));
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load todos.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /**
    * Computes counts for the different task statuses.
@@ -123,57 +172,76 @@ export function useTodos(): UseTodosReturn {
   }, [filteredTodos, page]);
 
   /**
-   * Adds a new todo to the list.
+   * Adds a new todo via the API, then appends the server's copy (with its
+   * real id) to local state.
    * @param title - The title of the task.
    * @param description - The description of the task.
    * @param assignee - The person assigned to the task.
    */
-  const addTodo = (title: string, description: TodoDescription, assignee?: string) => {
-    const newTodo: Todo = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      description,
-      completed: false,
-      createdAt: new Date(),
-      assignee: assignee?.trim(),
-    };
-    setTodos((prev) => [...prev, newTodo]);
-  };
+  const addTodo = useCallback(
+    async (title: string, description: TodoDescription, assignee?: string) => {
+      const response = await fetch("/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, assignee }),
+      });
+      const created = await parseApiResponse<TodoDTO>(response);
+      setTodos((prev) => [fromDTO(created), ...prev]);
+    },
+    []
+  );
 
   /**
-   * Updates the title and description of an existing todo.
+   * Updates the title, description, and assignee of an existing todo via
+   * the API, then merges the server's copy into local state.
    * @param id - The unique ID of the task to update.
    * @param title - The new title.
    * @param description - The new description.
    * @param assignee - The new assignee.
    */
-  const updateTodo = (id: string, title: string, description: TodoDescription, assignee?: string) => {
-    setTodos((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? { ...t, title: title.trim(), description, assignee: assignee?.trim() }
-          : t
-      )
-    );
-  };
+  const updateTodo = useCallback(
+    async (id: string, title: string, description: TodoDescription, assignee?: string) => {
+      const response = await fetch(`/api/todos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, assignee }),
+      });
+      const updated = await parseApiResponse<TodoDTO>(response);
+      setTodos((prev) => prev.map((t) => (t.id === id ? fromDTO(updated) : t)));
+    },
+    []
+  );
 
   /**
-   * Deletes a todo from the list.
+   * Deletes a todo via the API, then removes it from local state.
    * @param id - The unique ID of the task to delete.
    */
-  const deleteTodo = (id: string) => {
+  const deleteTodo = useCallback(async (id: string) => {
+    const response = await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    await parseApiResponse<null>(response);
     setTodos((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   /**
-   * Toggles the completion status of a todo.
+   * Toggles the completion status of a todo via the API, then merges the
+   * server's copy into local state.
    * @param id - The unique ID of the task to toggle.
    */
-  const toggleTodo = (id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
-  };
+  const toggleTodo = useCallback(
+    async (id: string) => {
+      const current = todos.find((t) => t.id === id);
+      if (!current) return;
+
+      const response = await fetch(`/api/todos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: !current.completed }),
+      });
+      const updated = await parseApiResponse<TodoDTO>(response);
+      setTodos((prev) => prev.map((t) => (t.id === id ? fromDTO(updated) : t)));
+    },
+    [todos]
+  );
 
   return {
     todos,
@@ -185,6 +253,8 @@ export function useTodos(): UseTodosReturn {
     selectedAssignee,
     currentPage: page,
     totalPages,
+    isLoading,
+    error,
     setSearchQuery,
     setActiveTab,
     setSelectedAssignee,

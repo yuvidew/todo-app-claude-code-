@@ -18,4 +18,19 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  todos        Todo[]
+}
+
+model Todo {
+  id          String   @id @default(cuid())
+  title       String
+  description Json
+  completed   Boolean  @default(false)
+  assignee    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
