@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/auth/PasswordInput"
-import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons"
 import { AuthLegal } from "@/components/auth/AuthLegal"
 import { type FieldErrors, validateEmail, validateLoginForm } from "@/components/auth/validation"
 
@@ -108,7 +107,6 @@ export function LoginForm({ onSignIn = defaultOnSignIn }: LoginFormProps) {
         {isSubmitting ? "Signing in..." : "Sign in"}
       </Button>
 
-      <SocialAuthButtons />
 
       <AuthLegal />
     </form>
