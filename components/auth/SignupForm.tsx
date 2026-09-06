@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/auth/PasswordInput"
 import { AuthLegal } from "@/components/auth/AuthLegal"
+import { toast } from "@/components/ui/toast"
 import {
   type FieldErrors,
   validateConfirmPassword,
@@ -21,21 +23,31 @@ export interface SignupValues {
 }
 
 interface SignupFormProps {
-  /** Isolated integration point for a real sign-up API. Defaults to a no-op
-   *  stub — swapping this prop is the only change needed once a backend exists. */
+  /** Isolated integration point for a real sign-up API. Defaults to a
+   *  fetch-based implementation that calls POST /api/auth/signup — swapping
+   *  this prop is the only change needed for tests or a future session change. */
   onSignUp?: (values: SignupValues) => Promise<void>
 }
 
 async function defaultOnSignUp(values: SignupValues) {
-  // TODO(auth): wire up the real sign-up API/session once one exists.
-  console.info("Sign-up submitted (not yet wired to a backend).", { email: values.email })
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(values),
+  })
+  const body = await res.json()
+  if (!res.ok || !body.success) {
+    throw new Error(body.message ?? "Something went wrong. Please try again.")
+  }
 }
 
 export function SignupForm({ onSignUp = defaultOnSignUp }: SignupFormProps) {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [errors, setErrors] = useState<FieldErrors>({})
+  const [formError, setFormError] = useState<string | undefined>()
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -65,6 +77,7 @@ export function SignupForm({ onSignUp = defaultOnSignUp }: SignupFormProps) {
     e.preventDefault()
     if (isSubmitting) return
 
+    setFormError(undefined)
     setHasSubmitted(true)
     const nextErrors = validateSignupForm({ email, password, confirmPassword })
     setErrors(nextErrors)
@@ -73,6 +86,14 @@ export function SignupForm({ onSignUp = defaultOnSignUp }: SignupFormProps) {
     setIsSubmitting(true)
     try {
       await onSignUp({ email, password })
+      toast.add({
+        title: "Account created",
+        description: "Your account has been created successfully. Please sign in.",
+        type: "success",
+      })
+      router.push("/sign-in")
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -136,6 +157,8 @@ export function SignupForm({ onSignUp = defaultOnSignUp }: SignupFormProps) {
           </FieldContent>
         </Field>
       </div>
+
+      {formError && <FieldError>{formError}</FieldError>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create account"}
