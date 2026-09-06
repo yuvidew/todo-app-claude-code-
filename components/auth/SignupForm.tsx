@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/auth/PasswordInput"
-import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons"
 import { AuthLegal } from "@/components/auth/AuthLegal"
 import {
   type FieldErrors,
@@ -142,7 +141,6 @@ export function SignupForm({ onSignUp = defaultOnSignUp }: SignupFormProps) {
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
 
-      <SocialAuthButtons />
 
       <AuthLegal />
     </form>
