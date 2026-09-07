@@ -10,7 +10,7 @@ const Home = () => {
     <div className="min-h-screen bg-background selection:bg-primary/20">
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen ">
-        {/* Main Premium Container */}
+        {/* Main Premium Container  */}
         <div className="w-full max-w-7xl overflow-hidden flex flex-col">
           <Navbar />
           <main className="flex flex-col items-center w-full">
