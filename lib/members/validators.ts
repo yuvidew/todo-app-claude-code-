@@ -30,3 +30,22 @@ export function validateCreateMemberInput(body: unknown): ValidationResult {
 
   return { valid: true }
 }
+
+/**
+ * Validates a raw "update member" request body. This phase only ever
+ * updates isActive, so unlike validateUpdateTodoInput this doesn't need
+ * an "at least one field present" check - isActive is required.
+ */
+export function validateUpdateMemberInput(body: unknown): ValidationResult {
+  if (typeof body !== "object" || body === null) {
+    return { valid: false, message: "Invalid request body." }
+  }
+
+  const { isActive } = body as Record<string, unknown>
+
+  if (typeof isActive !== "boolean") {
+    return { valid: false, message: "isActive must be a boolean." }
+  }
+
+  return { valid: true }
+}

@@ -49,8 +49,9 @@ export default function Home() {
   } = useTodos();
 
   // Real member directory backing the assignee dropdowns (replaces the old
-  // DUMMY_MEMBERS constant).
-  const { members } = useMembers();
+  // DUMMY_MEMBERS constant). Only active members are selectable here -
+  // deactivated members are managed on /members.
+  const { activeMembers } = useMembers();
 
   // UI state for managing modal visibility
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -69,7 +70,13 @@ export default function Home() {
             </div>
             <span className="text-lg font-bold tracking-tight text-foreground">NexusCore</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/members"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Members
+            </Link>
             <ThemeToggle />
             <LogoutButton />
           </div>
@@ -114,11 +121,15 @@ export default function Home() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All members</SelectItem>
-                {members.map((member) => (
+                {activeMembers.length == 0 ? (
+                  <SelectItem >
+                    No members
+                  </SelectItem>
+                ) : (activeMembers.map((member) => (
                   <SelectItem key={member.id} value={member.name}>
                     {member.name}
                   </SelectItem>
-                ))}
+                )))}
               </SelectContent>
             </Select>
           </div>
@@ -164,7 +175,7 @@ export default function Home() {
         mode={sheetMode}
         onModeChange={setSheetMode}
         task={selectedTask}
-        members={members}
+        members={activeMembers}
         onCreate={addTodo}
         onUpdate={(id, title, description, assignee) => {
           updateTodo(id, title, description, assignee);
