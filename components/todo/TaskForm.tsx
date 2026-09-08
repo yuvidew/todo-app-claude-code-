@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DUMMY_MEMBERS } from "@/constants/members";
+import { Member } from "@/types/member";
 import { TodoDescription } from "@/types/todo";
 
 export interface TaskFormValue {
@@ -28,13 +28,15 @@ interface TaskFormProps {
    * key is required whenever the underlying task/session changes.
    */
   editorKey: string | number;
+  /** The real member directory to populate the assignee dropdown from. */
+  members: Member[];
 }
 
 /**
  * The shared Title / Assignee / Description fields used by TaskSheet's
  * create and edit modes. Purely controlled - all state lives in the parent.
  */
-export function TaskForm({ value, onChange, editorKey }: TaskFormProps) {
+export function TaskForm({ value, onChange, editorKey, members }: TaskFormProps) {
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden px-6 py-4">
       <Field>
@@ -55,7 +57,7 @@ export function TaskForm({ value, onChange, editorKey }: TaskFormProps) {
             <SelectValue placeholder="Select a member..." />
           </SelectTrigger>
           <SelectContent>
-            {DUMMY_MEMBERS.map((member) => (
+            {members.map((member) => (
               <SelectItem key={member.id} value={member.name}>
                 {member.name} ({member.email})
               </SelectItem>

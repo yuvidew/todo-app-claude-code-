@@ -95,7 +95,14 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
+    // Embla has already fired its own "init" event by the time this ref is
+    // set, so we can't rely on subscribing alone to get the starting
+    // scroll-button state — but calling setState (via onSelect) directly
+    // here, rather than from an event callback, is exactly what
+    // react-hooks/set-state-in-effect warns about. Defer it to a microtask
+    // callback instead, matching how the "reInit"/"select" listeners below
+    // already call it from a callback rather than the effect body.
+    queueMicrotask(() => onSelect(api))
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
