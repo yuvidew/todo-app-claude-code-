@@ -77,6 +77,12 @@ export default function Home() {
             >
               Members
             </Link>
+            <Link
+              href="/profile"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Profile
+            </Link>
             <ThemeToggle />
             <LogoutButton />
           </div>
