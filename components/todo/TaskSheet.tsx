@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DynamicEditor } from "@/components/editor/DynamicEditor";
 import { TaskForm, TaskFormValue } from "@/components/todo/TaskForm";
+import { Member } from "@/types/member";
 import { Todo, TodoDescription } from "@/types/todo";
 import { User } from "lucide-react";
 
@@ -27,6 +28,8 @@ interface TaskSheetProps {
   task: Todo | null;
   onCreate: (title: string, description: TodoDescription, assignee?: string) => void;
   onUpdate: (id: string, title: string, description: TodoDescription, assignee?: string) => void;
+  /** The real member directory, forwarded to TaskForm's assignee dropdown. */
+  members: Member[];
 }
 
 const EMPTY_FORM: TaskFormValue = { title: "", description: [], assignee: "" };
@@ -36,7 +39,7 @@ const EMPTY_FORM: TaskFormValue = { title: "", description: [], assignee: "" };
  * new task, viewing an existing one read-only, and editing it in place -
  * switching modes without closing/reopening the Sheet.
  */
-export function TaskSheet({ open, onOpenChange, mode, onModeChange, task, onCreate, onUpdate }: TaskSheetProps) {
+export function TaskSheet({ open, onOpenChange, mode, onModeChange, task, onCreate, onUpdate, members }: TaskSheetProps) {
   const [form, setForm] = useState<TaskFormValue>(EMPTY_FORM);
   // Bumped whenever we (re-)enter create/edit, so the (uncontrolled) BlockNote
   // editor always remounts fresh instead of carrying over a previous session's
@@ -111,7 +114,7 @@ export function TaskSheet({ open, onOpenChange, mode, onModeChange, task, onCrea
               </div>
             </div>
           ) : (
-            <TaskForm value={form} onChange={setForm} editorKey={editorKey} />
+            <TaskForm value={form} onChange={setForm} editorKey={editorKey} members={members} />
           )}
         </div>
 

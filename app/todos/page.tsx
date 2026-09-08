@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTodos } from "@/hooks/useTodos";
+import { useMembers } from "@/hooks/useMembers";
 import { TodoSearch } from "@/components/todo/TodoSearch";
 import { TodoTabs } from "@/components/todo/TodoTabs";
 import { TodoList } from "@/components/todo/TodoList";
@@ -20,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DUMMY_MEMBERS } from "@/constants/members";
 import { Plus } from "lucide-react";
 
 /**
@@ -47,6 +47,10 @@ export default function Home() {
     deleteTodo,
     toggleTodo,
   } = useTodos();
+
+  // Real member directory backing the assignee dropdowns (replaces the old
+  // DUMMY_MEMBERS constant).
+  const { members } = useMembers();
 
   // UI state for managing modal visibility
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -110,7 +114,7 @@ export default function Home() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All members</SelectItem>
-                {DUMMY_MEMBERS.map((member) => (
+                {members.map((member) => (
                   <SelectItem key={member.id} value={member.name}>
                     {member.name}
                   </SelectItem>
@@ -160,6 +164,7 @@ export default function Home() {
         mode={sheetMode}
         onModeChange={setSheetMode}
         task={selectedTask}
+        members={members}
         onCreate={addTodo}
         onUpdate={(id, title, description, assignee) => {
           updateTodo(id, title, description, assignee);

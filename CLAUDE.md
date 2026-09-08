@@ -22,7 +22,7 @@ The repo contains two unrelated surfaces sharing one Next.js app:
 
 **State lives in one hook, nowhere else.** `hooks/useTodos.ts` owns all todo state and business logic — CRUD, tab filter (all/pending/completed), assignee filter, search, and pagination — and exposes it as a single `UseTodosReturn` object. `app/todos/page.tsx` and every `components/todo/*` component are presentational: they receive state and callbacks as props and don't hold their own business state. Data is in-memory only (`useState` in the hook); there is no backend or persistence, so a page refresh resets all todos. Keep new todo features inside this hook rather than pushing logic into components.
 
-**Data model & dummy data:** `types/todo.ts` defines `Todo` (assignee is optional). `constants/members.ts` exports `DUMMY_MEMBERS`, the shared fake member list used by `CreateTodoDialog`, `EditTodoDialog`, and the assignee filter `Select` in `app/todos/page.tsx` — reuse this constant rather than inventing another member list.
+**Data model:** `types/todo.ts` defines `Todo` (assignee is optional, stored as a free-text string). `types/member.ts` defines `Member`, the shared shape returned by `GET /api/members` (backed by the `Member` Prisma model) and consumed by `hooks/useMembers.ts`. `components/todo/TaskForm.tsx` and the assignee filter `Select` in `app/todos/page.tsx` both source their options from this hook — reuse it rather than inventing another member list or re-adding hardcoded dummy data.
 
 **Two different `TaskCard` components exist — don't conflate them:**
 - `components/todo/TaskCard.tsx` — the one actually rendered by `components/todo/TodoList.tsx` in the live todo app; takes a `Todo` and toggle/edit/delete callbacks.
