@@ -7,6 +7,8 @@ import { listMembers, createMember, DuplicateMemberEmailError } from "@/services
 
 /**
  * GET /api/members — lists every member, for the assignee dropdowns.
+ * Intentionally still returns inactive members - the /members table needs
+ * them; only the assignee dropdowns filter to active-only, client-side.
  */
 export async function GET() {
   const userId = await getApiUserId()

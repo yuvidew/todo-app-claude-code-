@@ -7,4 +7,5 @@ export interface Member {
   name: string;
   email: string;
   avatarUrl?: string | null;
+  isActive: boolean;
 }

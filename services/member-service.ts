@@ -1,6 +1,7 @@
 import * as memberRepository from "@/repositories/member-repository"
 
 export class DuplicateMemberEmailError extends Error {}
+export class MemberNotFoundError extends Error {}
 
 export interface CreateMemberInput {
   name: string
@@ -31,4 +32,15 @@ export async function createMember(input: CreateMemberInput) {
     email,
     avatarUrl: input.avatarUrl?.trim() || undefined,
   })
+}
+
+/**
+ * Updates a member's active status. Member has no owner (no userId), so
+ * this only checks existence, unlike updateTodo's ownership check.
+ */
+export async function updateMemberActive(id: number, isActive: boolean) {
+  const existing = await memberRepository.findById(id)
+  if (!existing) throw new MemberNotFoundError()
+
+  return memberRepository.update(id, { isActive })
 }
