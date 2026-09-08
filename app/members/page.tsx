@@ -58,6 +58,12 @@ export default function MembersPage() {
             >
               Todos
             </Link>
+            <Link
+              href="/profile"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Profile
+            </Link>
             <ThemeToggle />
             <LogoutButton />
           </div>
